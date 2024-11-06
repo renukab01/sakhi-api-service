@@ -1,26 +1,27 @@
+import os
 import ast
-from typing import (
-    Any,
-    List,
-    Tuple
-)
+from typing import Any, List, Tuple
+
 import tiktoken
 from dotenv import load_dotenv
 from langchain.docstore.document import Document
+
 from env_manager import llm_class, vectorstore_class
-from utils import convert_chat_messages, get_from_env_or_config
 from logger import logger
 from redis_util import read_messages_from_redis, store_messages_in_redis
+from utils import convert_chat_messages, get_from_env_or_config
 
 load_dotenv()
+
 temperature = float(get_from_env_or_config("llm", "temperature"))
 chatClient  = llm_class.get_client(temperature=temperature)
 max_messages = int(get_from_env_or_config("llm", "max_messages")) # Maximum number of messages to include in conversation history
+llm_type = os.getenv("LLM_TYPE")
 
 def querying_with_langchain_gpt3(index_id, query, context):
     intent_response = check_bot_intent(query, context)
     if intent_response:
-        return intent_response, None, 200
+        return intent_response, None, 200, 0, 0, 0
     
     try:
         system_rules = ""
@@ -32,36 +33,54 @@ def querying_with_langchain_gpt3(index_id, query, context):
 
         top_docs_to_fetch = get_from_env_or_config("database", "top_docs_to_fetch", None)
         documents = vectorstore_class.similarity_search_with_score(query, index_id, k=20)
+        print(documents)
         logger.debug(f"Marqo documents : {str(documents)}")
         min_score = get_from_env_or_config("database", "docs_min_score", None)
         filtered_document = get_score_filtered_documents(documents, float(min_score))
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         logger.info(f"Score filtered documents : {str(filtered_document)}")
         contexts = get_formatted_documents(filtered_document)
-        if not documents or not contexts:
-            return "I'm sorry, but I am not currently trained with relevant documents to provide a specific answer for your question.", None, 200
+        if not documents or not contexts or not filtered_document:
+            return "I'm sorry, but I am not currently trained with relevant documents to provide a specific answer for your question.", None, 200, 0, 0, 0
 
         system_rules = system_rules.format(contexts=contexts)
         logger.debug("==== System Rules ====")
         logger.debug(f"System Rules : {system_rules}")
-        response = call_chat_model(
+        answer = call_chat_model(
             messages=[
                 {"role": "system", "content": system_rules},
                 {"role": "user", "content": query}
             ]
         )
-        logger.info({"label": "llm_response", "response": response})
-        return response.strip(";"), None, 200
+        logger.info({"label": "llm_response", "response": answer.content})
+        
+        response = answer.content
+        print(answer.response_metadata)
+
+
+        if llm_type == "bedrock":
+            token_usage = answer.response_metadata["usage"]
+            input_tokens = token_usage["prompt_tokens"]
+            output_tokens = token_usage["completion_tokens"]
+            total_tokens = token_usage["total_tokens"]
+        elif llm_type == "openai":
+            token_usage = answer.response_metadata["token_usage"]
+            input_tokens = token_usage["prompt_tokens"]
+            output_tokens = token_usage["completion_tokens"]
+            total_tokens = token_usage["total_tokens"]
+
+        
+        return response.strip(";"), None, 200, input_tokens, output_tokens, total_tokens
     except Exception as e:
         error_message = str(e.__context__) + " and " + e.__str__()
         status_code = 500
 
-    return "", error_message, status_code
+    return "", error_message, status_code, 0, 0, 0
 
 def conversation_retrieval_chain(index_id, query, session_id, context):
     intent_response = check_bot_intent(query, context)
     if intent_response:
-        return intent_response, None, 200
+        return intent_response, None, 200, 0, 0, 0
     
     try:
         system_rules = ""
@@ -85,31 +104,47 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         logger.info(f"Score filtered documents : {str(filtered_document)}")
         contexts = get_formatted_documents(filtered_document)
-        if not documents or not contexts:
-            return "I'm sorry, but I am not currently trained with relevant documents to provide a specific answer for your question.", None, 200
+        if not documents or not contexts or not filtered_document:
+            return "I'm sorry, but I am not currently trained with relevant documents to provide a specific answer for your question.", None, 200, 0, 0, 0
 
         system_rules = system_rules.format(contexts=contexts)
         system_rules = {"role": "system", "content": system_rules}
         logger.debug(f"System Rules : {system_rules}")
         message_payload  = create_payload_by_message_count(user_message,system_rules,formatted_messages,max_messages=max_messages)
         logger.debug(f"message_payload :: {message_payload}")
-        response = call_chat_model(message_payload)
-        logger.info({"label": "llm_response", "response": response})
+        answer = call_chat_model(message_payload)
+        logger.info({"label": "llm_response", "response": answer.content})
+        
+        response = answer.content
+        print(answer.response_metadata)
+
+
+        if llm_type == "bedrock":
+            token_usage = answer.response_metadata["usage"]
+            input_tokens = token_usage["prompt_tokens"]
+            output_tokens = token_usage["completion_tokens"]
+            total_tokens = token_usage["total_tokens"]
+        elif llm_type == "openai":
+            token_usage = answer.response_metadata["token_usage"]
+            input_tokens = token_usage["prompt_tokens"]
+            output_tokens = token_usage["completion_tokens"]
+            total_tokens = token_usage["total_tokens"]
+
         assistant_message = format_assistant_message(response.strip(";"))
         messages = read_messages_from_redis(session_id)
         messages.extend([user_message,assistant_message])
         store_messages_in_redis(session_id, messages)
-        return response.strip(";"), None, 200
+        return response.strip(";"), None, 200, input_tokens, output_tokens, total_tokens
     except Exception as e:
         error_message = str(e.__context__) + " and " + e.__str__()
         status_code = 500
 
-    return "", error_message, status_code
+    return "", error_message, status_code, 0, 0, 0
 
 def call_chat_model(messages: List[dict]) -> str:
     converted_messsages = convert_chat_messages(messages)
     response = chatClient.invoke(input=converted_messsages)
-    return response.content
+    return response
 
 def format_assistant_message(a):
     """Formats the assistant message
