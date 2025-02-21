@@ -8,7 +8,7 @@ COPY . /config
 RUN pip install --no-cache-dir --upgrade -r /code/requirements-prod.txt
 COPY . /code
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "8"]
 
 # FROM continuumio/anaconda3:2023.03-1
 # WORKDIR /root

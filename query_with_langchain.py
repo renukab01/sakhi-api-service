@@ -26,26 +26,21 @@ def querying_with_langchain_gpt3(index_id, query, context):
     try:
         system_rules = ""
         activity_prompt_config = get_from_env_or_config("llm", "activity_prompt", None)
-        logger.debug(f"activity_prompt_config: {activity_prompt_config}")
         if activity_prompt_config:
             activity_prompt_dict = ast.literal_eval(activity_prompt_config)
             system_rules = activity_prompt_dict.get(context)
 
         top_docs_to_fetch = get_from_env_or_config("database", "top_docs_to_fetch", None)
         documents = vectorstore_class.similarity_search_with_score(query, index_id, k=20)
-        print(documents)
-        logger.debug(f"Marqo documents : {str(documents)}")
+        logger.debug(f"Marqo documents : {str(documents)} \n")
         min_score = get_from_env_or_config("database", "docs_min_score", None)
         filtered_document = get_score_filtered_documents(documents, float(min_score))
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
-        logger.info(f"Score filtered documents : {str(filtered_document)}")
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
             return "I'm sorry, but I am not currently trained with relevant documents to provide a specific answer for your question.", None, 200, 0, 0, 0
 
         system_rules = system_rules.format(contexts=contexts)
-        logger.debug("==== System Rules ====")
-        logger.debug(f"System Rules : {system_rules}")
         answer = call_chat_model(
             messages=[
                 {"role": "system", "content": system_rules},
@@ -85,7 +80,6 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
     try:
         system_rules = ""
         activity_prompt_config = get_from_env_or_config("llm", "activity_prompt", None)
-        logger.debug(f"activity_prompt_config: {activity_prompt_config}")
         activity_prompt_dict = ast.literal_eval(activity_prompt_config)
         system_rules = activity_prompt_dict.get(context)
         previous_messages  = read_messages_from_redis(session_id)
@@ -93,25 +87,20 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         user_message = {"role":"user","content": query}
         intent_system_prompt = get_chat_intent_prompt()
         intent_payload = create_payload_by_message_count(user_message, intent_system_prompt, messages=formatted_messages, max_messages=max_messages)
-        logger.debug(f"intent_payload :: {intent_payload}")
         search_intent = get_intent_query(intent_payload)
-        logger.info(f"search_intent :: {search_intent}")
         documents = vectorstore_class.similarity_search_with_score(search_intent, index_id, k=20)
         logger.debug(f"Marqo documents : {str(documents)}")
         min_score = get_from_env_or_config("database", "docs_min_score", None)
         filtered_document = get_score_filtered_documents(documents, float(min_score))
         top_docs_to_fetch = get_from_env_or_config("database", "top_docs_to_fetch", None)
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
-        logger.info(f"Score filtered documents : {str(filtered_document)}")
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
             return "I'm sorry, but I am not currently trained with relevant documents to provide a specific answer for your question.", None, 200, 0, 0, 0
 
         system_rules = system_rules.format(contexts=contexts)
         system_rules = {"role": "system", "content": system_rules}
-        logger.debug(f"System Rules : {system_rules}")
         message_payload  = create_payload_by_message_count(user_message,system_rules,formatted_messages,max_messages=max_messages)
-        logger.debug(f"message_payload :: {message_payload}")
         answer = call_chat_model(message_payload)
         logger.info({"label": "llm_response", "response": answer.content})
         
