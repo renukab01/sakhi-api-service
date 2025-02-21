@@ -123,7 +123,6 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
     text = None
     regional_answer = None
     audio_output_url = None
-    logger.info({"label": "query", "query_text": query_text, "index_id": index_id, "context": context, "input_language": language, "output_format": output_format, "audio_url": audio_url})
     if not query_text and not audio_url:
         raise HTTPException(status_code=422, detail="Either 'text' or 'audio' should be present!")
 
@@ -142,14 +141,12 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
         answer, error_message, status_code, input_tokens, output_tokens, total_tokens= querying_with_langchain_gpt3(index_id, text, context)
         if len(answer) != 0:
             regional_answer, error_message = process_outgoing_text(answer, language)
-            logger.info({"regional_answer": regional_answer})
             if regional_answer is not None:
                 if is_audio:
                     output_file, error_message = process_outgoing_voice(regional_answer, language)
                     if output_file is not None:
                         storage.upload_to_storage(output_file.name)
                         audio_output_url, error_message = storage.generate_public_url(output_file.name)
-                        logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
                         output_file.close()
                         os.remove(output_file.name)
                     else:
@@ -166,7 +163,6 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
         raise HTTPException(status_code=status_code, detail=error_message)
 
     response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
-    logger.info({"x_request_id": x_request_id, "query": query_text, "text": text, "response": response, "number of_input_tokens":input_tokens, "number_of_output_tokens":output_tokens, "number_of_total_tokens":total_tokens})
     return response
 
 @app.post("/v1/chat", tags=["Conversation chat over Document Store"], include_in_schema=True)
@@ -185,9 +181,7 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
     text = None
     regional_answer = None
     audio_output_url = None
-    logger.info({"label": "query", "query_text": query_text, "index_id": index_id, "context": context, "input_language": language, "output_format": output_format, "audio_url": audio_url})
     redis_session_id  = prepare_redis_key(x_source, x_consumer_id, context)
-    logger.info(f"Redis session ID :: {redis_session_id} ")
     if not query_text and not audio_url:
         raise HTTPException(status_code=422, detail="Either 'text' or 'audio' should be present!")
 
@@ -206,14 +200,12 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
         answer, error_message, status_code, input_tokens, output_tokens, total_tokens = conversation_retrieval_chain(index_id, text, redis_session_id, context)
         if len(answer) != 0:
             regional_answer, error_message = process_outgoing_text(answer, language)
-            logger.info({"regional_answer": regional_answer})
             if regional_answer is not None:
                 if is_audio:
                     output_file, error_message = process_outgoing_voice(regional_answer, language)
                     if output_file is not None:
                         storage.upload_to_storage(output_file.name)
                         audio_output_url, error_message = storage.generate_public_url(output_file.name)
-                        logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
                         output_file.close()
                         os.remove(output_file.name)
                     else:
@@ -230,5 +222,4 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
         raise HTTPException(status_code=status_code, detail=error_message)
 
     response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
-    logger.info({"x_request_id": x_request_id, "query": query_text, "text": text, "response": response, "number of_input_tokens":input_tokens, "number_of_output_tokens":output_tokens, "number_of_total_tokens":total_tokens})
     return response
