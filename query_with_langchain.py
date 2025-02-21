@@ -50,8 +50,6 @@ def querying_with_langchain_gpt3(index_id, query, context):
         logger.info({"label": "llm_response", "response": answer.content})
         
         response = answer.content
-        print(answer.response_metadata)
-
 
         if llm_type == "bedrock":
             token_usage = answer.response_metadata["usage"]

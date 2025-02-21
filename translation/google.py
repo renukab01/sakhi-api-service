@@ -29,7 +29,7 @@ class GoogleCloudTranslationClass(BaseTranslationClass):
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
             sample_rate_hertz=16000,
-            language_code="en-US",
+            language_code=input_language,
         )
 
         response = client.recognize(config=config, audio=audio)

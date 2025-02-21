@@ -12,7 +12,7 @@ docker-compose.yml
 config
 docker-compose.yaml
 new_indexer.py
-config.ini
+
 .pytest_cache
 __pycache__/*
 venv/*
