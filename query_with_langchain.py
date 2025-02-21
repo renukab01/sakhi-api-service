@@ -50,6 +50,7 @@ def querying_with_langchain_gpt3(index_id, query, context):
         logger.info({"label": "llm_response", "response": answer.content})
         
         response = answer.content
+
         print(answer.response_metadata)
 
 
@@ -96,7 +97,9 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
+
             return "I'm sorry, but I am not currently trained with relevant documents to provide a specific answer for your question.", None, 200, 0, 0, 0
+
 
         system_rules = system_rules.format(contexts=contexts)
         system_rules = {"role": "system", "content": system_rules}

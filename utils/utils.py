@@ -9,7 +9,7 @@ from typing import (
     Sequence,
 )
 from langchain.schema.messages import BaseMessage
-from langchain.adapters.openai import convert_dict_to_message
+from langchain_community.adapters.openai import convert_dict_to_message
 
 
 def is_base64(base64_string):

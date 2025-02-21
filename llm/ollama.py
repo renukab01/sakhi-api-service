@@ -1,7 +1,7 @@
 import os
 from typing import Any
 
-from langchain.chat_models import ChatOllama
+from langchain_community.chat_models import ChatOllama
 from llm.base import BaseChatClient
 
 

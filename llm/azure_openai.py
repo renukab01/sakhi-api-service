@@ -1,7 +1,7 @@
 import os
 from typing import Any
 
-from langchain.chat_models.azure_openai import AzureChatOpenAI
+from langchain_community.chat_models.azure_openai import AzureChatOpenAI
 from llm.base import BaseChatClient
 
 

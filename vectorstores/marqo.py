@@ -8,7 +8,7 @@ from typing import (
 
 import marqo
 from langchain.docstore.document import Document
-from langchain.vectorstores.marqo import Marqo
+from langchain_community.vectorstores import Marqo
 
 from vectorstores.base import BaseVectorStore
 
