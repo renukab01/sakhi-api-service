@@ -16,3 +16,8 @@ config.ini
 .pytest_cache
 __pycache__/*
 venv/*
+/llm/__pycache__/*
+/storage/__pycache__/*
+/translation/__pycache__/*
+/utils/__pycache__/*
+/vectorstores/__pycache__/*
