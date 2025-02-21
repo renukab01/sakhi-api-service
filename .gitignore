@@ -13,3 +13,5 @@ docker-compose.yml
 .json
 config
 docker-compose.yaml
+new_indexer.py
+config.ini
