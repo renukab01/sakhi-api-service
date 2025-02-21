@@ -1,11 +1,9 @@
-.env
-data
-input_data
-venv/
 .DS_Store
-.idea/
-__pycache__/
-.pytest_cache
+.env
+
+.idea/*
+.vscode/*
+
 gcp_credentials.json
 sample.env
 extraction.py
@@ -15,3 +13,6 @@ config
 docker-compose.yaml
 new_indexer.py
 config.ini
+.pytest_cache
+__pycache__/*
+venv/*
