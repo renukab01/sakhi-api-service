@@ -17,6 +17,9 @@ if TYPE_CHECKING:
     from llm.bedrock import (
         BedrockChatClient
     )
+    from llm.groq import (
+        GroqChatClient
+    )
 
 
 # __all__ = [
@@ -32,7 +35,8 @@ _module_lookup = {
     "OpenAIChatClient": "llm.openai",
     "AzureChatClient": "llm.azure_openai",
     "OllamaChatClient": "llm.ollama",
-    "BedrockChatClient": "llm.bedrock"
+    "BedrockChatClient": "llm.bedrock",
+    "GroqChatClient": "llm.groq"
 }
 
 def __getattr__(name: str) -> Any:

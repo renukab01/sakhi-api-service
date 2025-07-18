@@ -28,3 +28,12 @@ def read_messages_from_redis(key):
         return pickle.loads(decompressed_data)
     else:
         return []  # Handle the case where the key doesn't exis
+
+def clear_message_from_redis(redis_key):
+    """
+    Clears the stored messages for the given Redis key.
+    """
+    # Use the existing Redis client
+    formatted_key = f"msg_{redis_key}" if not redis_key.startswith("msg_") else redis_key
+    redis_client.delete(formatted_key)
+    print(f"Cleared Redis key: {formatted_key}")

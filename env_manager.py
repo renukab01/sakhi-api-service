@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from llm import (AzureChatClient, BaseChatClient, BedrockChatClient,
-                 OllamaChatClient, OpenAIChatClient)
+                 OllamaChatClient, OpenAIChatClient, GroqChatClient)
 from logger import logger
 from storage import (AwsS3BucketClass, BaseStorageClass, GcpBucketClass,
                      OciBucketClass)
@@ -24,7 +24,8 @@ class EnvironmentManager():
                     "openai": OpenAIChatClient,
                     "azure": AzureChatClient,
                     "ollama": OllamaChatClient,
-                    "bedrock": BedrockChatClient                    
+                    "bedrock": BedrockChatClient,
+                    "groq": GroqChatClient                    
                 },
                 "env_key": "LLM_TYPE"
             },

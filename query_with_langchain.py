@@ -38,7 +38,7 @@ def querying_with_langchain_gpt3(index_id, query, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
-            return "I'm sorry, but I am not currently trained with relevant documents to provide a specific answer for your question.", None, 200, 0, 0, 0
+            return "मुझे माफ़ करना, मेरे पास प्रश्न का उत्तर नहीं है। कृपया प्रश्न को फिर से पूछने का प्रयास करें या हमारे हेल्पलाइन नंबर: +02247492488 पर संपर्क करें।", None, 200, 0, 0, 0
 
         system_rules = system_rules.format(contexts=contexts)
         answer = call_chat_model(
@@ -61,6 +61,10 @@ def querying_with_langchain_gpt3(index_id, query, context):
             input_tokens = token_usage["prompt_tokens"]
             output_tokens = token_usage["completion_tokens"]
             total_tokens = token_usage["total_tokens"]
+        else:
+            input_tokens = 0
+            output_tokens = 0
+            total_tokens = 0
 
         
         return response.strip(";"), None, 200, input_tokens, output_tokens, total_tokens
@@ -94,7 +98,7 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
-            return "I'm sorry, but I am not currently trained with relevant documents to provide a specific answer for your question.", None, 200, 0, 0, 0
+            return "मुझे माफ़ करना, मेरे पास प्रश्न का उत्तर नहीं है। कृपया प्रश्न को फिर से पूछने का प्रयास करें या हमारे हेल्पलाइन नंबर: +02247492488 पर संपर्क करें।", None, 200, 0, 0, 0
 
         system_rules = system_rules.format(contexts=contexts)
         system_rules = {"role": "system", "content": system_rules}
@@ -116,12 +120,17 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
             input_tokens = token_usage["prompt_tokens"]
             output_tokens = token_usage["completion_tokens"]
             total_tokens = token_usage["total_tokens"]
+        else:
+            input_tokens = 0
+            output_tokens = 0
+            total_tokens = 0
 
         assistant_message = format_assistant_message(response.strip(";"))
         messages = read_messages_from_redis(session_id)
         messages.extend([user_message,assistant_message])
         store_messages_in_redis(session_id, messages)
-        return response.strip(";"), None, 200, input_tokens, output_tokens, total_tokens
+        print(f"Response: >>>>>>>>>>>> {response}")
+        return response.strip(";").replace("**","*"), None, 200, input_tokens, output_tokens, total_tokens
     except Exception as e:
         error_message = str(e.__context__) + " and " + e.__str__()
         status_code = 500
@@ -329,9 +338,8 @@ def get_score_filtered_documents(documents: List[Tuple[Document, Any]], min_scor
 def get_formatted_documents(documents: List[Tuple[Document, Any]]):
     sources = ""
     for document, _ in documents:
-        sources += f"""
-            > {document.page_content} \n Source: {document.metadata['file_name']},  page# {document.metadata['page_label']};\n\n
-            """
+        metadata_str = "; ".join(f"{key}: {value}" for key, value in document.metadata.items())
+        sources += f"""\n> {document.page_content} \n Metadata: {metadata_str}\n\n"""
     return sources
 
 

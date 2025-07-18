@@ -4,7 +4,6 @@ RUN apt-get update && apt install build-essential --fix-missing -y
 RUN apt-get install ffmpeg -y
 COPY ./requirements-prod.txt /code/requirements-prod.txt
 RUN python -m pip install --upgrade pip
-COPY . /config
 RUN pip install --no-cache-dir --upgrade -r /code/requirements-prod.txt
 COPY . /code
 
