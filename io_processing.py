@@ -1,5 +1,7 @@
 import time
+import io
 from logger import logger
+from pydub import AudioSegment
 
 from env_manager import translate_class as translator
 from utils import get_from_env_or_config
@@ -57,18 +59,35 @@ def process_outgoing_text(english_text, input_language):
 
 def process_outgoing_voice(message, input_language):
     """
-    Main function for generating audio response
+    Main function for generating audio response completely in-memory.
+    Converts text to speech (WAV), then converts WAV to MP3 in RAM.
+    Returns an in-memory file buffer and a generated filename.
     """
+    input_language="hi"
     error_message = None
     decoded_audio_content = translator.text_to_speech(language=input_language, text=message)
-    if decoded_audio_content is not None:
-        logger.info("Creating output MP3 file")
-        time_stamp = time.strftime("%Y%m%d-%H%M%S")
-        filename = "audio-output-" + time_stamp + ".mp3"
-        output_mp3_file = open(filename, "wb")
-        output_mp3_file.write(decoded_audio_content)
-        logger.info("Audio Response is saved as a MP3 file.")
-        return output_mp3_file, error_message
-    error_message = "Text to Audio conversion failed"
+
+    if decoded_audio_content:
+        logger.info("Received WAV audio content from Bhashini. Converting to MP3 in-memory.")
+        try:
+            wav_file_in_memory = io.BytesIO(decoded_audio_content)
+            audio = AudioSegment.from_wav(wav_file_in_memory)
+
+            mp3_file_in_memory = io.BytesIO()
+
+            audio.export(mp3_file_in_memory, format="mp3")
+
+            time_stamp = time.strftime("%Y%m%d-%H%M%S")
+            output_mp3_filename = f"audio-output-{time_stamp}.mp3"
+            
+            logger.info("In-memory MP3 conversion successful.")
+            return mp3_file_in_memory, output_mp3_filename, None
+
+        except Exception as e:
+            error_message = f"Failed during in-memory audio conversion: {e}"
+            logger.error(error_message, exc_info=True)
+            return None, None, error_message
+
+    error_message = "Text to Audio conversion failed (did not receive content from Bhashini)"
     logger.error(error_message)
-    return None, error_message
+    return None, None, error_message

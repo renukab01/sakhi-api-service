@@ -145,13 +145,14 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
             logger.info({"regional_answer": regional_answer})
             if regional_answer is not None:
                 if is_audio:
-                    output_file, error_message = process_outgoing_voice(regional_answer, language)
-                    if output_file is not None:
-                        storage.upload_to_storage(output_file.name)
-                        audio_output_url, error_message = storage.generate_public_url(output_file.name)
-                        logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
-                        output_file.close()
-                        os.remove(output_file.name)
+                    mp3_data_buffer, mp3_filename, error_message = process_outgoing_voice(regional_answer, language)
+                    if mp3_data_buffer is not None:
+                        upload_success = storage.upload_to_storage(object_name=mp3_filename, file_content=mp3_data_buffer)
+                        if upload_success:
+                            audio_output_url, error_message = storage.generate_public_url(mp3_filename)
+                            logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
+                        else:
+                            status_code = 503
                     else:
                         status_code = 503
                 else:
@@ -207,13 +208,14 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
             logger.info({"regional_answer": regional_answer})
             if regional_answer is not None:
                 if is_audio:
-                    output_file, error_message = process_outgoing_voice(regional_answer, language)
-                    if output_file is not None:
-                        storage.upload_to_storage(output_file.name)
-                        audio_output_url, error_message = storage.generate_public_url(output_file.name)
-                        logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
-                        output_file.close()
-                        os.remove(output_file.name)
+                    mp3_data_buffer, mp3_filename, error_message = process_outgoing_voice(regional_answer, language)
+                    if mp3_data_buffer is not None:
+                        upload_success = storage.upload_to_storage(object_name=mp3_filename, file_content=mp3_data_buffer)
+                        if upload_success:
+                            audio_output_url, error_message = storage.generate_public_url(mp3_filename)
+                            logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
+                        else:
+                            status_code = 503
                     else:
                         status_code = 503
                 else:
