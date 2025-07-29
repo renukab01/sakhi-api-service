@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from enum import Enum
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -140,18 +141,26 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
     
     if text is not None:
         answer, error_message, status_code, input_tokens, output_tokens, total_tokens= querying_with_langchain_gpt3(index_id, text, context)
+        # Find and extract the full URL
+        video_url = None
+        if 'https://' in answer:
+            parts = answer.split('https://')
+            if len(parts) > 1:
+                video_url = 'https://' + parts[1]
+        answer = answer.split('https://')[0].strip()  # Remove the URL from answer text
         if len(answer) != 0:
             regional_answer, error_message = process_outgoing_text(answer, language)
             logger.info({"regional_answer": regional_answer})
             if regional_answer is not None:
                 if is_audio:
-                    output_file, error_message = process_outgoing_voice(regional_answer, language)
-                    if output_file is not None:
-                        storage.upload_to_storage(output_file.name)
-                        audio_output_url, error_message = storage.generate_public_url(output_file.name)
-                        logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
-                        output_file.close()
-                        os.remove(output_file.name)
+                    mp3_data_buffer, mp3_filename, error_message = process_outgoing_voice(regional_answer, language)
+                    if mp3_data_buffer is not None:
+                        upload_success = storage.upload_to_storage(object_name=mp3_filename, file_content=mp3_data_buffer)
+                        if upload_success:
+                            audio_output_url, error_message = storage.generate_public_url(mp3_filename)
+                            logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
+                        else:
+                            status_code = 503
                     else:
                         status_code = 503
                 else:
@@ -164,7 +173,9 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
     if status_code != 200:
         logger.error({"index_id": index_id, "query": query_text, "input_language": language, "output_format": output_format, "audio_url": audio_url, "status_code": status_code, "error_message": error_message})
         raise HTTPException(status_code=status_code, detail=error_message)
+    
 
+    regional_answer += f" {video_url}" if video_url else ""
     response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
     return response
 
@@ -202,18 +213,26 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
     
     if text is not None:
         answer, error_message, status_code, input_tokens, output_tokens, total_tokens = conversation_retrieval_chain(index_id, text, redis_session_id, context)
+        # Find and extract the full URL
+        video_url = None
+        if 'https://' in answer:
+            parts = answer.split('https://')
+            if len(parts) > 1:
+                video_url = 'https://' + parts[1]
+        answer = answer.split('https://')[0].strip()  # Remove the URL from answer text
         if len(answer) != 0:
             regional_answer, error_message = process_outgoing_text(answer, language)
             logger.info({"regional_answer": regional_answer})
             if regional_answer is not None:
                 if is_audio:
-                    output_file, error_message = process_outgoing_voice(regional_answer, language)
-                    if output_file is not None:
-                        storage.upload_to_storage(output_file.name)
-                        audio_output_url, error_message = storage.generate_public_url(output_file.name)
-                        logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
-                        output_file.close()
-                        os.remove(output_file.name)
+                    mp3_data_buffer, mp3_filename, error_message = process_outgoing_voice(regional_answer, language)
+                    if mp3_data_buffer is not None:
+                        upload_success = storage.upload_to_storage(object_name=mp3_filename, file_content=mp3_data_buffer)
+                        if upload_success:
+                            audio_output_url, error_message = storage.generate_public_url(mp3_filename)
+                            logger.debug(f"Audio Ouput URL ===> {audio_output_url}")
+                        else:
+                            status_code = 503
                     else:
                         status_code = 503
                 else:
@@ -227,5 +246,6 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
         logger.error({"index_id": index_id, "query": query_text, "input_language": language, "output_format": output_format, "audio_url": audio_url, "status_code": status_code, "error_message": error_message})
         raise HTTPException(status_code=status_code, detail=error_message)
 
+    regional_answer += f" {video_url}" if video_url else ""
     response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
     return response

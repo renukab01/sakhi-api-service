@@ -77,6 +77,7 @@ def querying_with_langchain_gpt3(index_id, query, context):
 def conversation_retrieval_chain(index_id, query, session_id, context):
     intent_response = check_bot_intent(query, context)
     if intent_response:
+        print(f'intent_response: {intent_response}')
         return intent_response, None, 200, 0, 0, 0
     
     try:
@@ -312,7 +313,19 @@ def check_bot_intent(query: str, context: str):
         messages=[{"role": "system", "content": intent_prompt}, {"role": "user", "content": query}]
     )
     logger.info({"label": "intent_response", "intent_response": intent_response})
-    if intent_response.lower() == "yes":
+    
+    # Extract the content from AIMessage object and process it to get just the intent
+    intent_content = intent_response.content.lower()
+    print(f'intent_content: {intent_content}')
+    # Extract just the intent by looking for keywords
+    if "bot_query" in intent_content:
+        intent_type = "bot_query"
+    elif "out_of_scope" in intent_content:
+        intent_type = "out_of_scope"
+    else:
+        intent_type = "finance_query"  # default fallback
+        
+    if intent_type == "bot_query":
         bot_prompt_config = get_from_env_or_config("llm", "bot_prompt", "")
         logger.debug(f"bot_prompt_config: {bot_prompt_config}")
         bot_prompt_dict = ast.literal_eval(bot_prompt_config)
@@ -325,7 +338,9 @@ def check_bot_intent(query: str, context: str):
             ]
         )
         logger.info({"label": "llm_bot_response", "bot_response": response})
-        return response
+        return response.content  # Add .content here to return string instead of AIMessage
+    elif intent_type == "out_of_scope":
+        return "मुझे माफ़ करना, मेरे पास प्रश्न का उत्तर नहीं है। कृपया प्रश्न को फिर से पूछने का प्रयास करें या हमारे हेल्पलाइन नंबर: +02247492488 पर संपर्क करें।"
     else:
         return None
             
