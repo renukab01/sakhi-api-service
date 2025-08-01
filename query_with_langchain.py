@@ -129,9 +129,25 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         assistant_message = format_assistant_message(response.strip(";"))
         messages = read_messages_from_redis(session_id)
         messages.extend([user_message,assistant_message])
+        final_response = response.strip(";").replace("**","*")
         store_messages_in_redis(session_id, messages)
-        print(f"Response: >>>>>>>>>>>> {response}")
-        return response.strip(";").replace("**","*"), None, 200, input_tokens, output_tokens, total_tokens
+        print(f"Response: >>>>>>>>>>>> {final_response}\n\n")
+        
+        formatting_prompt_config = get_from_env_or_config("llm", "formatting_prompt", None)
+        if formatting_prompt_config:
+            formatting_prompt_dict = ast.literal_eval(formatting_prompt_config)
+            formatting_rules = formatting_prompt_dict.get(context)
+            if formatting_rules:
+                
+                formatting_prompt = formatting_rules.format(
+                    query=user_message,
+                    response=final_response
+                )
+                formatting_response = llm_class.get_client(temperature=0.2).invoke(formatting_prompt)
+                print(f"Formatted Response: >>>>>>>>>>> {formatting_response.content}")
+                final_response = formatting_response.content
+
+        return final_response, None, 200, input_tokens, output_tokens, total_tokens
     except Exception as e:
         error_message = str(e.__context__) + " and " + e.__str__()
         status_code = 500

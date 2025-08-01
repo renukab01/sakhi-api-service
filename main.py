@@ -175,7 +175,8 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
         raise HTTPException(status_code=status_code, detail=error_message)
     
 
-    regional_answer += f" {video_url}" if video_url else ""
+    if video_url:
+        regional_answer = f"{video_url} \n{regional_answer}"
     response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
     return response
 
@@ -246,6 +247,7 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
         logger.error({"index_id": index_id, "query": query_text, "input_language": language, "output_format": output_format, "audio_url": audio_url, "status_code": status_code, "error_message": error_message})
         raise HTTPException(status_code=status_code, detail=error_message)
 
-    regional_answer += f" {video_url}" if video_url else ""
+    if video_url:
+        regional_answer = f"{video_url} \n{regional_answer}"  # Add video URL at the beginning
     response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
     return response
