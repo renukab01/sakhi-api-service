@@ -1,5 +1,6 @@
 import os
 import ast
+import random
 from typing import Any, List, Tuple
 
 import tiktoken
@@ -38,7 +39,7 @@ def querying_with_langchain_gpt3(index_id, query, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
-            return "मुझे माफ़ करना, मेरे पास प्रश्न का उत्तर नहीं है। कृपया प्रश्न को फिर से पूछने का प्रयास करें या हमारे हेल्पलाइन नंबर: +02247492488 पर संपर्क करें।", None, 200, 0, 0, 0
+            return "🤔 शायद मैं सही से नहीं समझ पाया। आप इसे एक और तरह से पूछ सकते हैं। 😊", None, 200, 0, 0, 0
 
         system_rules = system_rules.format(contexts=contexts)
         answer = call_chat_model(
@@ -99,7 +100,7 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
-            return "मुझे माफ़ करना, मेरे पास प्रश्न का उत्तर नहीं है। कृपया प्रश्न को फिर से पूछने का प्रयास करें या हमारे हेल्पलाइन नंबर: +02247492488 पर संपर्क करें।", None, 200, 0, 0, 0
+            return "🤔 शायद मैं सही से नहीं समझ पाया। आप इसे एक और तरह से पूछ सकते हैं। 😊", None, 200, 0, 0, 0
 
         system_rules = system_rules.format(contexts=contexts)
         system_rules = {"role": "system", "content": system_rules}
@@ -356,7 +357,11 @@ def check_bot_intent(query: str, context: str):
         logger.info({"label": "llm_bot_response", "bot_response": response})
         return response.content  # Add .content here to return string instead of AIMessage
     elif intent_type == "out_of_scope":
-        return "मुझे माफ़ करना, मेरे पास प्रश्न का उत्तर नहीं है। कृपया प्रश्न को फिर से पूछने का प्रयास करें या हमारे हेल्पलाइन नंबर: +02247492488 पर संपर्क करें।"
+        out_of_scope_responses = [
+            "💡 हम्म… मैं पैसे की बचत , फ़्रॉड से बचाव, और डिजिटल सेवाओं के सुरक्षित इस्तेमाल जैसे विषयों में मदद कर सकता हूँ 🔐। क्या आप इन विषयों के बारे में और जानना चाहेंगे? 😊",
+            "❗इस विषय में मैं मदद नहीं कर सकता, लेकिन डिजिटल और पैसों से जुड़े ज़रूरी विषयों  में मदद कर सकता हूँ। क्या आप इन विषयों के बारे में और जानना चाहेंगे? 😊"
+        ]
+        return random.choice(out_of_scope_responses)
     else:
         return None
             
