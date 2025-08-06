@@ -1,7 +1,12 @@
 FROM python:3.8.10
 WORKDIR /code
-RUN apt-get update && apt install build-essential --fix-missing -y
-RUN apt-get install ffmpeg -y
+RUN sed -i 's|http://deb.debian.org/debian%7Chttp://archive.debian.org/debian%7Cg' /etc/apt/sources.list && \
+    sed -i 's|http://security.debian.org/debian-security%7Chttp://archive.debian.org/debian-security%7Cg' /etc/apt/sources.list && \
+    sed -i '/deb.debian.org/s/^/#/' /etc/apt/sources.list && \
+    echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until && \
+    apt-get update && apt-get install -y --fix-missing build-essential ffmpeg
+#RUN apt-get update && apt install build-essential --fix-missing -y
+#RUN apt-get install ffmpeg -y
 COPY ./requirements-prod.txt /code/requirements-prod.txt
 RUN python -m pip install --upgrade pip
 RUN pip install --no-cache-dir --upgrade -r /code/requirements-prod.txt
