@@ -20,9 +20,9 @@ max_messages = int(get_from_env_or_config("llm", "max_messages")) # Maximum numb
 llm_type = os.getenv("LLM_TYPE")
 
 def querying_with_langchain_gpt3(index_id, query, context):
-    intent_response = check_bot_intent(query, context)
+    intent_response, response_type = check_bot_intent(query, context)
     if intent_response:
-        return intent_response, None, 200, 0, 0, 0
+        return intent_response, None, 200, 0, 0, 0, response_type
     
     try:
         system_rules = ""
@@ -39,7 +39,7 @@ def querying_with_langchain_gpt3(index_id, query, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
-            return "🤔 शायद मैं सही से नहीं समझ पाया। आप इसे एक और तरह से पूछ सकते हैं। 😊", None, 200, 0, 0, 0
+            return "🤔 शायद मैं सही से नहीं समझ पाया। आप इसे एक और तरह से पूछ सकते हैं। 😊", None, 200, 0, 0, 0, "fallback"
 
         system_rules = system_rules.format(contexts=contexts)
         answer = call_chat_model(
@@ -68,18 +68,18 @@ def querying_with_langchain_gpt3(index_id, query, context):
             total_tokens = 0
 
         
-        return response.strip(";"), None, 200, input_tokens, output_tokens, total_tokens
+        return response.strip(";"), None, 200, input_tokens, output_tokens, total_tokens, "ai_generated"
     except Exception as e:
         error_message = str(e.__context__) + " and " + e.__str__()
         status_code = 500
 
-    return "", error_message, status_code, 0, 0, 0
+    return "", error_message, status_code, 0, 0, 0, "failed"
 
 def conversation_retrieval_chain(index_id, query, session_id, context):
-    intent_response = check_bot_intent(query, context)
+    intent_response, response_type = check_bot_intent(query, context)
     if intent_response:
         print(f'intent_response: {intent_response}')
-        return intent_response, None, 200, 0, 0, 0
+        return intent_response, None, 200, 0, 0, 0, response_type
     
     try:
         system_rules = ""
@@ -100,7 +100,7 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
-            return "🤔 शायद मैं सही से नहीं समझ पाया। आप इसे एक और तरह से पूछ सकते हैं। 😊", None, 200, 0, 0, 0
+            return "🤔 शायद मैं सही से नहीं समझ पाया। आप इसे एक और तरह से पूछ सकते हैं। 😊", None, 200, 0, 0, 0, "fallback"
 
         system_rules = system_rules.format(contexts=contexts)
         system_rules = {"role": "system", "content": system_rules}
@@ -148,12 +148,12 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
                 print(f"Formatted Response: >>>>>>>>>>> {formatting_response.content}")
                 final_response = formatting_response.content
 
-        return final_response, None, 200, input_tokens, output_tokens, total_tokens
+        return final_response, None, 200, input_tokens, output_tokens, total_tokens, "ai_generated"
     except Exception as e:
         error_message = str(e.__context__) + " and " + e.__str__()
         status_code = 500
 
-    return "", error_message, status_code, 0, 0, 0
+    return "", error_message, status_code, 0, 0, 0, "failed"
 
 def call_chat_model(messages: List[dict]) -> str:
     converted_messsages = convert_chat_messages(messages)
@@ -323,7 +323,7 @@ def check_bot_intent(query: str, context: str):
     enable_bot_intent = get_from_env_or_config("llm", "enable_bot_intent", None)
     logger.debug(f"enable_bot_intent: {enable_bot_intent}")
     if enable_bot_intent.lower() == "false":
-        return None
+        return None, None
 
     intent_prompt = get_from_env_or_config("llm", "intent_prompt")
     intent_response = call_chat_model(
@@ -355,15 +355,15 @@ def check_bot_intent(query: str, context: str):
             ]
         )
         logger.info({"label": "llm_bot_response", "bot_response": response})
-        return response.content  # Add .content here to return string instead of AIMessage
+        return response.content, "ai_generated"
     elif intent_type == "out_of_scope":
         out_of_scope_responses = [
             "💡 हम्म… मैं पैसे की बचत , फ़्रॉड से बचाव, और डिजिटल सेवाओं के सुरक्षित इस्तेमाल जैसे विषयों में मदद कर सकता हूँ 🔐। क्या आप इन विषयों के बारे में और जानना चाहेंगे? 😊",
             "❗इस विषय में मैं मदद नहीं कर सकता, लेकिन डिजिटल और पैसों से जुड़े ज़रूरी विषयों  में मदद कर सकता हूँ। क्या आप इन विषयों के बारे में और जानना चाहेंगे? 😊"
         ]
-        return random.choice(out_of_scope_responses)
+        return random.choice(out_of_scope_responses), "out_of_scope"
     else:
-        return None
+        return None, None
             
  
 

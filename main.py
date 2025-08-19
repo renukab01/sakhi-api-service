@@ -46,12 +46,14 @@ async def shutdown_event():
 Context = Enum("Context", {type: type for type in get_from_env_or_config('request', 'supported_context', None).split(',')})
 DropdownOutputFormat = Enum("DropdownOutputFormat", {type: type for type in get_from_env_or_config('request', 'supported_response_format', None).split(',')})
 DropDownInputLanguage = Enum("DropDownInputLanguage", {type: type for type in get_from_env_or_config('request', 'supported_lang_codes', None).split(',')})
+ResponseType = Enum("ResponseType", {type: type for type in get_from_env_or_config('request', 'supported_response_type', None).split(',')})
 
 class OutputResponse(BaseModel):
     text: str
     audio: str = None
     language: DropDownInputLanguage # type: ignore
     format: DropdownOutputFormat # type: ignore
+    response_type: ResponseType # type: ignore
     number_of_input_tokens: int
     number_of_output_tokens: int
     number_of_total_tokens: int
@@ -140,7 +142,7 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
         is_audio = True
     
     if text is not None:
-        answer, error_message, status_code, input_tokens, output_tokens, total_tokens= querying_with_langchain_gpt3(index_id, text, context)
+        answer, error_message, status_code, input_tokens, output_tokens, total_tokens, response_type = querying_with_langchain_gpt3(index_id, text, context)
         # Find and extract the full URL
         video_url = None
         if 'https://' in answer:
@@ -177,7 +179,7 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
 
     if video_url:
         regional_answer = f"{video_url} \n{regional_answer}"
-    response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
+    response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, response_type=response_type, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
     return response
 
 @app.post("/v1/chat", tags=["Conversation chat over Document Store"], include_in_schema=True)
@@ -213,7 +215,7 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
         is_audio = True
     
     if text is not None:
-        answer, error_message, status_code, input_tokens, output_tokens, total_tokens = conversation_retrieval_chain(index_id, text, redis_session_id, context)
+        answer, error_message, status_code, input_tokens, output_tokens, total_tokens, response_type = conversation_retrieval_chain(index_id, text, redis_session_id, context)
         # Find and extract the full URL
         video_url = None
         if 'https://' in answer:
@@ -249,5 +251,5 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
 
     if video_url:
         regional_answer = f"{video_url} \n{regional_answer}"  # Add video URL at the beginning
-    response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
+    response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, response_type=response_type, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
     return response

@@ -151,8 +151,20 @@ class TelemetryLogger:
             for item in flattened_dict.items():
                 eventEDataParams.append({item[0]: item[1]})
 
-        if eventInput.get("response", {}) != {}:
-            flattened_dict = self.__flatten_dict(json.loads(eventInput.get("response", {})))
+        response = eventInput.get("response", {})
+        if response != {}:
+            if isinstance(response, str):
+                try:
+                    # Try to parse as JSON
+                    parsed_response = json.loads(response)
+                    flattened_dict = self.__flatten_dict(parsed_response)
+                except json.JSONDecodeError:
+                    # Handle non-JSON strings like "OK"
+                    flattened_dict = {"response_text": response}
+            else:
+                # Handle dict responses
+                flattened_dict = self.__flatten_dict(response)
+                
             if bool(flattened_dict):
                 for item in flattened_dict.items():
                     eventEDataParams.append({item[0]: item[1]})
