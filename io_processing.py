@@ -57,7 +57,7 @@ def process_outgoing_text(english_text, input_language):
     return regional_text, error_message
 
 
-def process_outgoing_voice(message, input_language):
+def process_outgoing_voice(message, input_language, prefix=""):
     """
     Main function for generating audio response completely in-memory.
     Converts text to speech (WAV), then converts WAV to MP3 in RAM.
@@ -78,7 +78,10 @@ def process_outgoing_voice(message, input_language):
             audio.export(mp3_file_in_memory, format="mp3")
 
             time_stamp = time.strftime("%Y%m%d-%H%M%S")
-            output_mp3_filename = f"audio-output-{time_stamp}.mp3"
+            if prefix != "":
+                output_mp3_filename = f"{prefix}-{time_stamp}.mp3"
+            else:
+                output_mp3_filename = f"audio-output-{time_stamp}.mp3"
             
             logger.info("In-memory MP3 conversion successful.")
             return mp3_file_in_memory, output_mp3_filename, None

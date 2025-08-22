@@ -228,7 +228,8 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
             logger.info({"regional_answer": regional_answer})
             if regional_answer is not None:
                 if is_audio:
-                    mp3_data_buffer, mp3_filename, error_message = process_outgoing_voice(regional_answer, language)
+                    prefix = f"{x_consumer_id}-{query_text}"
+                    mp3_data_buffer, mp3_filename, error_message = process_outgoing_voice(regional_answer, language, prefix)
                     if mp3_data_buffer is not None:
                         upload_success = storage.upload_to_storage(object_name=mp3_filename, file_content=mp3_data_buffer)
                         if upload_success:
