@@ -39,7 +39,7 @@ def querying_with_langchain_gpt3(index_id, query, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
-            return "🤔 शायद मैं सही से नहीं समझ पाया। आप इसे एक और तरह से पूछ सकते हैं। 😊", None, 200, 0, 0, 0, "fallback"
+            return "शायद मैं सही से नहीं समझ पाई 🙂 क्या आप इसे एक और तरीके से पूछ सकते हैं?", None, 200, 0, 0, 0, "fallback"
 
         system_rules = system_rules.format(contexts=contexts)
         answer = call_chat_model(
@@ -100,7 +100,7 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         filtered_document = filtered_document[:int(top_docs_to_fetch)]
         contexts = get_formatted_documents(filtered_document)
         if not documents or not contexts or not filtered_document:
-            return "🤔 शायद मैं सही से नहीं समझ पाया। आप इसे एक और तरह से पूछ सकते हैं। 😊", None, 200, 0, 0, 0, "fallback"
+            return "शायद मैं सही से नहीं समझ पाई 🙂 क्या आप इसे एक और तरीके से पूछ सकते हैं?", None, 200, 0, 0, 0, "fallback"
 
         system_rules = system_rules.format(contexts=contexts)
         system_rules = {"role": "system", "content": system_rules}
@@ -358,8 +358,8 @@ def check_bot_intent(query: str, context: str):
         return response.content, "ai_generated"
     elif intent_type == "out_of_scope":
         out_of_scope_responses = [
-            "💡 हम्म… मैं पैसे की बचत , फ़्रॉड से बचाव, और डिजिटल सेवाओं के सुरक्षित इस्तेमाल जैसे विषयों में मदद कर सकता हूँ 🔐। क्या आप इन विषयों के बारे में और जानना चाहेंगे? 😊",
-            "❗इस विषय में मैं मदद नहीं कर सकता, लेकिन डिजिटल और पैसों से जुड़े ज़रूरी विषयों  में मदद कर सकता हूँ। क्या आप इन विषयों के बारे में और जानना चाहेंगे? 😊"
+            "💡 हम्म… मैं पैसे की बचत, फ़्रॉड से बचाव, और डिजिटल सेवाओं के सुरक्षित इस्तेमाल जैसे विषयों में मदद कर सकती हूँ 🔐। क्या आप इन विषयों के बारे में और जानना चाहेंगी? 😊",
+            "❗मैं इस विषय में मदद नहीं कर सकती, लेकिन डिजिटल और पैसों से जुड़े ज़रूरी विषयों में मदद कर सकती हूँ। क्या आप इन विषयों के बारे में और जानना चाहेंगी? 😊"
         ]
         return random.choice(out_of_scope_responses), "out_of_scope"
     else:

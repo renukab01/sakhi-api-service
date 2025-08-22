@@ -21,6 +21,7 @@ class GcpBucketClass(BaseStorageClass):
         """
         try:
             bucket = self.client.bucket(self.bucket_name)
+            object_name = f"bot_responses/{object_name}"
             blob = bucket.blob(object_name)
 
             # IMPORTANT: Reset the buffer's cursor to the beginning
