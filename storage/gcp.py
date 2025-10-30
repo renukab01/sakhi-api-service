@@ -39,6 +39,7 @@ class GcpBucketClass(BaseStorageClass):
     def generate_public_url(self, object_name: str):
         try:
             bucket = self.client.get_bucket(self.bucket_name)
+            object_name = f"bot_responses/{object_name}"
             blob = bucket.blob(object_name)
 
             blob.acl.all().grant_read()
