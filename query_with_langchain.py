@@ -76,10 +76,10 @@ def querying_with_langchain_gpt3(index_id, query, context):
     return "", error_message, status_code, 0, 0, 0, "failed"
 
 def conversation_retrieval_chain(index_id, query, session_id, context):
-    intent_response, response_type = check_bot_intent(query, context)
-    if intent_response:
-        print(f'intent_response: {intent_response}')
-        return intent_response, None, 200, 0, 0, 0, response_type
+    # intent_response, response_type = check_bot_intent(query, context)
+    # if intent_response:
+    #     print(f'>>> intent_response: {intent_response}')
+    #     return intent_response, None, 200, 0, 0, 0, response_type
     
     try:
         system_rules = ""
@@ -92,6 +92,12 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         intent_system_prompt = get_chat_intent_prompt()
         intent_payload = create_payload_by_message_count(user_message, intent_system_prompt, messages=formatted_messages, max_messages=max_messages)
         search_intent = get_intent_query(intent_payload)
+
+        intent_response, response_type = check_bot_intent(search_intent, context)
+        if intent_response:
+            print(f'>>> intent_response: {intent_response}')
+            return intent_response, None, 200, 0, 0, 0, response_type
+
         documents = vectorstore_class.similarity_search_with_score(search_intent, index_id, k=20)
         logger.debug(f"Marqo documents : {str(documents)}")
         min_score = get_from_env_or_config("database", "docs_min_score", None)
@@ -109,7 +115,6 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
         logger.info({"label": "llm_response", "response": answer.content})
         
         response = answer.content
-        print(answer.response_metadata)
 
 
         if llm_type == "bedrock":
@@ -344,10 +349,8 @@ def check_bot_intent(query: str, context: str):
         
     if intent_type == "bot_query":
         bot_prompt_config = get_from_env_or_config("llm", "bot_prompt", "")
-        logger.debug(f"bot_prompt_config: {bot_prompt_config}")
         bot_prompt_dict = ast.literal_eval(bot_prompt_config)
         system_rules = bot_prompt_dict.get(context)
-        logger.debug(f"Intent System Rules : {system_rules}")
         response = call_chat_model(
             messages=[
                 {"role": "system", "content": system_rules},
