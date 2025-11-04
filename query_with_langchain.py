@@ -340,13 +340,14 @@ def check_bot_intent(query: str, context: str):
     intent_content = intent_response.content.lower()
     print(f'intent_content: {intent_content}')
     # Extract just the intent by looking for keywords
-    if "bot_query" in intent_content:
-        intent_type = "bot_query"
-    elif "out_of_scope" in intent_content:
+    intent_type = "out_of_scope"  # default intent
+    if "out_of_scope" in intent_content:
         intent_type = "out_of_scope"
-    else:
-        intent_type = "finance_query"  # default fallback
-        
+    elif "bot_query" in intent_content:
+        intent_type = "bot_query"
+    elif "finance_query" in intent_content:
+        intent_type = "finance_query"
+
     if intent_type == "bot_query":
         bot_prompt_config = get_from_env_or_config("llm", "bot_prompt", "")
         bot_prompt_dict = ast.literal_eval(bot_prompt_config)
