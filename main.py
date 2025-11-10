@@ -146,10 +146,7 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
         # Find and extract the full URL
         video_url = None
         if 'https://' in answer:
-            parts = answer.split('https://')
-            if len(parts) > 1:
-                video_url = 'https://' + parts[1]
-        answer = answer.split('https://')[0].strip()  # Remove the URL from answer text
+            answer, video_url = extract_video_url_and_clean(answer)
         if len(answer) != 0:
             regional_answer, error_message = process_outgoing_text(answer, language)
             logger.info({"regional_answer": regional_answer})
@@ -219,10 +216,7 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
         # Find and extract the full URL
         video_url = None
         if 'https://' in answer:
-            parts = answer.split('https://')
-            if len(parts) > 1:
-                video_url = 'https://' + parts[1]
-        answer = answer.split('https://')[0].strip()  # Remove the URL from answer text
+            answer, video_url = extract_video_url_and_clean(answer)
         if len(answer) != 0:
             regional_answer, error_message = process_outgoing_text(answer, language)
             logger.info({"regional_answer": regional_answer})
@@ -254,3 +248,32 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
         regional_answer = f"{video_url} \n{regional_answer}"  # Add video URL at the beginning
     response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, response_type=response_type, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
     return response
+
+def extract_video_url_and_clean(answer: str):
+    if not answer:
+        return answer, None
+
+    # find first occurrence of http (the split point)
+    http_index = answer.find('http')
+    if http_index == -1:
+        return answer.strip(), None
+
+    # extract URL by taking the first whitespace-delimited token starting at http
+    tail = answer[http_index:]
+    video_url = tail.split()[0]  # do NOT strip other punctuation here (per your request)
+
+    # everything before the URL
+    before = answer[:http_index]
+
+    # find last '.' or '?' in the text before the URL
+    last_punct_index = max(before.rfind('.'), before.rfind('?'), before.rfind('।'), before.rfind('!'))
+
+    if last_punct_index != -1:
+        # keep up to and including that punctuation
+        cleaned_text = before[:last_punct_index + 1].strip()
+    else:
+        # no '.' or '?' found before the URL: keep all text before URL
+        cleaned_text = before.strip()
+
+    return cleaned_text, video_url
+
