@@ -175,7 +175,7 @@ async def query(request: QueryModel, x_request_id: str = Header(None, alias="X-R
     
 
     if video_url:
-        regional_answer = f"{video_url} \n{regional_answer}"
+        regional_answer = f"यह वीडियो सुझाव के तौर पर साझा किया गया है। \n{video_url} \n{regional_answer}"
     response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, response_type=response_type, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
     return response
 
@@ -245,7 +245,7 @@ async def chat(request: QueryModel, x_request_id: str = Header(None, alias="X-Re
         raise HTTPException(status_code=status_code, detail=error_message)
 
     if video_url:
-        regional_answer = f"{video_url} \n{regional_answer}"  # Add video URL at the beginning
+        regional_answer = f"यह वीडियो सुझाव के तौर पर साझा किया गया है। \n{video_url} \n{regional_answer}"  # Add video URL at the beginning
     response = ResponseForQuery(output=OutputResponse(text=regional_answer, audio=audio_output_url, language=language, format=output_format, response_type=response_type, number_of_input_tokens=input_tokens, number_of_output_tokens=output_tokens, number_of_total_tokens=total_tokens))
     return response
 
