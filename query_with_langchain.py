@@ -131,13 +131,13 @@ def conversation_retrieval_chain(index_id, query, session_id, context):
             print(f'>>> intent_response: {intent_response}')
             return intent_response, None, 200, 0, 0, 0, response_type
 
-        if context == "swadhaar_agent_dev":
+        if context in _SWADHAAR_CONTEXTS:
             documents = vectorstore_class.hybrid_search_with_score(query, index_id, k=20)
         else:
             documents = vectorstore_class.similarity_search_with_score(search_intent, index_id, k=10)
         logger.debug(f"Marqo documents : {str(documents)}")
         min_score = get_from_env_or_config("database", "docs_min_score", None)
-        if context == "swadhaar_agent_dev":
+        if context in _SWADHAAR_CONTEXTS:
             min_score = get_from_env_or_config("database", "hybrid_docs_min_score", None)
         filtered_document = get_score_filtered_documents(documents, float(min_score))
         top_docs_to_fetch = get_from_env_or_config("database", "top_docs_to_fetch", None)
@@ -354,7 +354,7 @@ def check_bot_intent(query: str, context: str):
         return None, None
 
     intent_prompt = get_from_env_or_config("llm", "intent_prompt")
-    if context == "swadhaar_agent_dev":
+    if context in _SWADHAAR_CONTEXTS:
         intent_prompt = get_from_env_or_config("llm", "intent_prompt_dev")
 
     intent_response = call_chat_model(
