@@ -94,7 +94,7 @@ def is_valid_video(url: str) -> bool:
     """Check if the url is a substring of any of the values in _VIDEO_URLS"""
     if not url:
         return False
-    return any(url in video_url for video_url in _VIDEO_URLS)
+    return url.split('?')[0] in _VIDEO_URLS
 
 
 @app.get(
